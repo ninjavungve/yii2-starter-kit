@@ -7,13 +7,13 @@ docker-compose up -d
 ```
 2. Create database:
 ```
-docker-compose exec db mysql -uroot -proot -e 'CREATE DATABASE yii2_test_db'
+docker-compose exec db mysql -uroot -proot -e "CREATE DATABASE \`yii2_test_db\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci" 
 ```
 3. Setup application:
 ```
-docker-compose exec app php tests/codeception/bin/yii app/setup --interactive=0
+docker-compose exec app php tests/bin/yii app/setup --interactive=0
 ```
-4. Start web server (do not close bash session):
+5. Start web server for acceptance tests (do not close bash session):
 ```
 docker-compose exec app php -S localhost:8080
 ```

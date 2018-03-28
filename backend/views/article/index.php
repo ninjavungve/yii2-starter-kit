@@ -2,9 +2,11 @@
 
 use common\grid\EnumColumn;
 use common\models\ArticleCategory;
+use trntv\yii\datetime\DateTimeWidget;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
 use yii\grid\GridView;
+use yii\web\JsExpression;
 
 /* @var $this yii\web\View */
 /* @var $searchModel backend\models\search\ArticleSearch */
@@ -48,15 +50,39 @@ $this->params['breadcrumbs'][] = $this->title;
                 }
             ],
             [
-                'class' => EnumColumn::className(),
+                'class' => EnumColumn::class,
                 'attribute' => 'status',
                 'enum' => [
                     Yii::t('backend', 'Not Published'),
                     Yii::t('backend', 'Published')
                 ]
             ],
-            'published_at:datetime',
-            'created_at:datetime',
+            [
+                'attribute' => 'published_at',
+                'format' => 'datetime',
+                'filter' => DateTimeWidget::widget([
+                    'model' => $searchModel,
+                    'attribute' => 'published_at',
+                    'phpDatetimeFormat' => 'dd.MM.yyyy',
+                    'momentDatetimeFormat' => 'DD.MM.YYYY',
+                    'clientEvents' => [
+                        'dp.change' => new JsExpression('(e) => $(e.target).find("input").trigger("change.yiiGridView")')
+                    ],
+                ])
+            ],
+            [
+                'attribute' => 'created_at',
+                'format' => 'datetime',
+                'filter' => DateTimeWidget::widget([
+                    'model' => $searchModel,
+                    'attribute' => 'created_at',
+                    'phpDatetimeFormat' => 'dd.MM.yyyy',
+                    'momentDatetimeFormat' => 'DD.MM.YYYY',
+                    'clientEvents' => [
+                        'dp.change' => new JsExpression('(e) => $(e.target).find("input").trigger("change.yiiGridView")')
+                    ],
+                ])
+            ],
 
             // 'updated_at',
 

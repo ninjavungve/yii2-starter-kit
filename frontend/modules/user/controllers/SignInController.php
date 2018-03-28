@@ -2,16 +2,6 @@
 
 namespace frontend\modules\user\controllers;
 
-use Yii;
-use yii\authclient\AuthAction;
-use yii\base\Exception;
-use yii\base\InvalidParamException;
-use yii\filters\AccessControl;
-use yii\filters\VerbFilter;
-use yii\helpers\ArrayHelper;
-use yii\web\BadRequestHttpException;
-use yii\web\Response;
-use yii\widgets\ActiveForm;
 use common\commands\SendEmailCommand;
 use common\models\User;
 use common\models\UserToken;
@@ -19,6 +9,18 @@ use frontend\modules\user\models\LoginForm;
 use frontend\modules\user\models\PasswordResetRequestForm;
 use frontend\modules\user\models\ResetPasswordForm;
 use frontend\modules\user\models\SignupForm;
+use Yii;
+use yii\authclient\AuthAction;
+use yii\base\Exception;
+use yii\base\InvalidArgumentException;
+use yii\filters\AccessControl;
+use yii\filters\VerbFilter;
+use yii\helpers\ArrayHelper;
+use yii\web\BadRequestHttpException;
+use yii\web\ForbiddenHttpException;
+use yii\web\NotFoundHttpException;
+use yii\web\Response;
+use yii\widgets\ActiveForm;
 
 /**
  * Class SignInController
@@ -48,11 +50,11 @@ class SignInController extends \yii\web\Controller
     {
         return [
             'access' => [
-                'class' => AccessControl::className(),
+                'class' => AccessControl::class,
                 'rules' => [
                     [
                         'actions' => [
-                            'signup', 'login', 'request-password-reset', 'reset-password', 'oauth', 'activation'
+                            'signup', 'login', 'login-by-pass', 'request-password-reset', 'reset-password', 'oauth', 'activation'
                         ],
                         'allow' => true,
                         'roles' => ['?']
@@ -75,7 +77,7 @@ class SignInController extends \yii\web\Controller
                 ]
             ],
             'verbs' => [
-                'class' => VerbFilter::className(),
+                'class' => VerbFilter::class,
                 'actions' => [
                     'logout' => ['post']
                 ]
@@ -101,6 +103,30 @@ class SignInController extends \yii\web\Controller
         return $this->render('login', [
             'model' => $model
         ]);
+    }
+
+    /**
+     * @param $token
+     * @return array|string|Response
+     * @throws ForbiddenHttpException
+     * @throws \Exception
+     * @throws \Throwable
+     * @throws \yii\db\StaleObjectException
+     */
+    public function actionLoginByPass($token)
+    {
+        if (!$this->module->enableLoginByPass) {
+            throw new NotFoundHttpException();
+        }
+
+        $user = UserToken::use($token, UserToken::TYPE_LOGIN_PASS);
+
+        if ($user === null) {
+            throw new ForbiddenHttpException();
+        }
+
+        Yii::$app->user->login($user);
+        return $this->goHome();
     }
 
     /**
@@ -208,7 +234,7 @@ class SignInController extends \yii\web\Controller
     {
         try {
             $model = new ResetPasswordForm($token);
-        } catch (InvalidParamException $e) {
+        } catch (InvalidArgumentException $e) {
             throw new BadRequestHttpException($e->getMessage());
         }
 
@@ -242,7 +268,12 @@ class SignInController extends \yii\web\Controller
             $user = new User();
             $user->scenario = 'oauth_create';
             $user->username = ArrayHelper::getValue($attributes, 'login');
-            $user->email = ArrayHelper::getValue($attributes, 'email');
+            // check default location of email, if not found as in google plus dig inside the array of emails
+            $email = ArrayHelper::getValue($attributes, 'email');
+            if($email === null){
+                $email = ArrayHelper::getValue($attributes, ['emails', 0, 'value']);
+            }
+            $user->email = $email;
             $user->oauth_client = $client->getName();
             $user->oauth_client_user_id = ArrayHelper::getValue($attributes, 'id');
             $user->status = User::STATUS_ACTIVE;

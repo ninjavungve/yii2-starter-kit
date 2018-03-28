@@ -1,4 +1,4 @@
-language: php
+dist: trusty
 
 php:
   - 7.1
@@ -6,9 +6,11 @@ php:
 
 # faster builds on new travis setup not using sudo
 sudo: false
+env:
+  - COMPOSE_FILE=docker/travis.yml
 
 services:
-  - mysql
+  - docker
 
 # cache vendor dirs
 cache:
